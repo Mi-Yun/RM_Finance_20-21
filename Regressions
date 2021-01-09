@@ -1,0 +1,514 @@
+*This is a Stata do file
+*Regressions
+*//Simple Regression
+	*Simple Regression
+	*Log Simple Regression
+*//Panel Regression
+*//Fixed Effects
+	*time fixed effects
+	*industry fixed effects
+	*state fixed effects
+*//Industries
+*//IV
+
+*//Simple Regression
+**start with basic regressions 
+**Covid on stock prices with index and logs 
+reg prcodavg weekly_death, robust  
+eststo simple_regression 
+reg prcodavg_log weekly_death_log, robust
+eststo simple_regression_log_log   
+reg prcodavg_log weekly_death, robust 
+eststo simple_regression_log_index
+reg prcodavg weekly_death_log, robust 
+eststo simple_regression_index_log
+esttab 
+esttab using simple_regression.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+
+**consider death of the whole United States
+reg prcodavg US_weekly_death, robust 
+eststo simple_regression_US
+reg prcodavg_log US_weekly_death_log, robust
+eststo simple_regression_US_log
+esttab 
+esttab using simple_regression_US.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+
+**check the effect of cases not deaths!
+reg prcodavg weekly_cases, robust 
+eststo regression_stock_cases
+reg prcodavg_log weekly_cases_log, robust
+eststo regression_both_log
+reg prcodavg_log weekly_cases, robust
+eststo regression_stock_log_cases
+reg prcodavg weekly_cases_log, robust 
+eststo regression_stock_cases_log 
+esttab 
+esttab using Regression_with_cases.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+
+
+**compare the first and the second wave!
+**first wave till the end of june 
+**second wave starting from mid October
+plot US_weekly_death week if fyearq==2020
+generate time_check=0 if fyearq==2020
+replace time_check=1 if fyearq==2020 & week<=27 
+replace time_check=2 if fyearq==2020 & week>=42
+
+**Interaction terms to compare the results, 0 is weeks between
+reg prcodavg c.weekly_death#i.time_check, robust
+eststo compare_weeks 
+esttab 
+esttab using compare_two_waves.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+
+**impact of Covid-19 on stock prices clustered by state
+bysort week: reg prcodavg weekly_cases, robust 
+
+**impacts on industries using sic dummy created above 
+**Interaction term displays the sensitivity of rising deaths in the respective industry
+reg prcodavg c.weekly_death##1.sic_dummy, robust
+eststo Mining
+reg prcodavg c.weekly_death##2.sic_dummy, robust
+eststo Construction
+reg prcodavg c.weekly_death##3.sic_dummy, robust
+eststo Manufacturing
+reg prcodavg c.weekly_death##4.sic_dummy, robust
+eststo Transport_Communication
+reg prcodavg c.weekly_death##5.sic_dummy, robust
+eststo Wholesale_trade
+reg prcodavg c.weekly_death##6.sic_dummy, robust
+eststo Retail
+reg prcodavg c.weekly_death##7.sic_dummy, robust
+eststo Finance_Insurance
+reg prcodavg c.weekly_death##8.sic_dummy, robust
+eststo Service
+reg prcodavg c.weekly_death##10.sic_dummy, robust
+eststo Agriculture_Fishing_Foresty
+esttab,mtitles label title(impact on stock prices in different industries)
+esttab using regression_industry_final.tex, label title(Impact on stock prices in different industries) mtitle replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear
+
+**further clustering of Retail in order to explain the surprising result 
+**compare to the aggregate of all other firms not just within retail 
+gen retail_dummy=0 
+replace retail_dummy=1 if sic==5400 | sic==5411
+**grocery and Food
+replace retail_dummy=2 if sic==5621 |sic==5600 |sic==5661 |sic==5651 
+**Clothing 
+replace retail_dummy=3 if sic==5810 |sic==5812
+**Eating and drinking places
+replace retail_dummy=4 if sic==5500 |sic==5531
+**Auto supply 
+reg prcodavg c.weekly_death##i.retail_dummy, robust
+eststo regression_retail 
+esttab, label
+esttab using regression_retail_industry.tex, label replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear
+
+**state analysis
+bysort state:reg prcodavg weekly_death, robust 
+
+**14 states with more than 3000 observations
+reg prcodavg weekly_death if state=="CA", robust
+eststo  california
+reg prcodavg weekly_death if state=="CO", robust 
+eststo colorado
+reg prcodavg weekly_death if state=="TX", robust 
+eststo texas
+reg prcodavg weekly_death if state=="FL", robust 
+eststo florida
+reg prcodavg weekly_death if state=="PA", robust 
+eststo pennsylvania
+reg prcodavg weekly_death if state=="GA", robust 
+eststo georgia
+reg prcodavg weekly_death if state=="IL", robust 
+eststo illinois
+esttab, mtitle
+esttab using regression_state_1.tex, mtitle replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+
+reg prcodavg weekly_death if state=="NY", robust 
+eststo new_york
+reg prcodavg weekly_death if state=="CT", robust 
+eststo connecticut
+reg prcodavg weekly_death if state=="MA", robust 
+eststo massachusetts
+reg prcodavg weekly_death if state=="NC", robust 
+eststo north_carolina
+reg prcodavg weekly_death if state=="NJ", robust 
+eststo new_jersey
+reg prcodavg weekly_death if state=="OH", robust 
+eststo ohio
+reg prcodavg weekly_death if state=="VA", robust 
+eststo virginia
+esttab, mtitle
+esttab using regression_state_2.tex, mtitle replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+
+**create indicator fot only the first wave
+gen time_state=0 
+replace time_state=1 if fyearq==2020 & week<=27
+**to analysize: are the inisgnificant states at least significant for first wave?
+**check thoose states that are inisgnificant for the first wave 
+reg prcodavg c.weekly_death##i.time_state if state=="FL", robust 
+eststo florida
+reg prcodavg c.weekly_death##i.time_state if state=="PA", robust 
+eststo pennsylvania
+reg prcodavg c.weekly_death##i.time_state if state=="GA", robust 
+eststo georgia
+reg prcodavg c.weekly_death##i.time_state if state=="NY", robust 
+eststo new_york
+esttab, mtitle
+esttab using regression_state_time_1.tex, mtitle replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+
+reg prcodavg c.weekly_death##i.time_state if state=="CT", robust 
+eststo connecticut
+reg prcodavg c.weekly_death##i.time_state if state=="MA", robust 
+eststo massachusetts
+reg prcodavg c.weekly_death##i.time_state if state=="NC", robust 
+eststo north_carolina
+reg prcodavg c.weekly_death##i.time_state if state=="OH", robust 
+eststo ohio
+esttab, mtitle
+esttab using regression_state_time_2.tex, mtitle replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+
+
+**check polit impact to the weekly cases
+reg weekly_death polit, robust 
+eststo basic
+reg weekly_death polit_check, robust 
+eststo only_total_representation
+reg weekly_death i.polit_check, robust 
+eststo only_total__i
+reg weekly_death_log i.polit_check, robust 
+eststo only_total_log_i
+reg weekly_death i.polit, robust 
+eststo basic_i
+reg weekly_death_log i.polit, robust 
+eststo basic_log_i
+esttab
+esttab using weekly_death_polit.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+
+**add indendent variables
+corr prcodavg weekly_death mkvaltq saleq sic_dummy chq atq  revtq
+
+**start with basic case
+reg prcodavg weekly_death, robust
+eststo basic
+**add industry 
+reg prcodavg weekly_death sic, robust
+eststo basic_2
+**add sales but from last quarter
+**cretae sales last quarter variable 
+duplicates list gvkeyid time_variable
+sort gvkeyid time_variable
+by gvkeyid: gen sales_t_before=saleq[_n-12] 
+gen sales_before_log=log(sales_t_before)
+**add sales
+reg prcodavg weekly_death sic sales_t_before, robust
+eststo basic_3
+**test whether it makes sense to take log values 
+reg prcodavg weekly_death sic_dummy sales_t_before, robust 
+predict resid, resid
+hist resid, percent
+tabstat resid, stats(median mean)
+**median is less than the mean, hence the residual is skewed to the right 
+**this speakes in favor of using log values- which is done in the latter part 
+**first add companie size expressed as total assets 
+reg prcodavg weekly_death sic sales_t_before atq, robust 
+eststo basic_4
+**add cash
+reg prcodavg weekly_death sic sales_t_before atq chq, robust
+eststo basic_5 
+**add leverage
+reg prcodavg weekly_death sic sales_t_before atq chq debt_to_assets, robust 
+eststo basic_6 
+estat vif
+esttab 
+esstab using further_regression_basic.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+ 
+ 
+ **now with log values- but weekly death not as log 
+ **put without penny stocks, as thoose have negative logs 
+ **create dummy to identify penny stocks 
+gen log_dummy=0
+replace log_dummy=1 if prcodavg<=1
+
+gen sales_dummy=0
+replace sales_dummy=1 if saleq<1
+
+gen assets_dummy=0
+replace assets_dummy=1 if atq<1
+ 
+ **same as before add variables
+reg prcodavg_log weekly_death if log_dummy==0, robust 
+eststo basic_log
+reg prcodavg_log weekly_death sic if log_dummy==0, robust
+eststo basic_log_2
+reg prcodavg_log weekly_death sic sales_before_log  if log_dummy==0 & sales_dummy==0, robust 
+eststo basic_log_3
+reg prcodavg_log weekly_death sic sales_before_log assets_log if log_dummy==0 & sales_dummy==0 & assets_dummy==0, robust
+eststo basic_log_4
+**add cash 
+reg prcodavg_log weekly_death sic sales_before_log assets_log  cash_log if log_dummy==0 & sales_dummy==0 &assets_dummy==0, robust
+eststo basic_log_5
+**add leverage!
+reg prcodavg_log weekly_death sic sales_before_log assets_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0 &assets_dummy==0, robust
+eststo basic_log_6
+estat vif
+**Vif high for assets hence drop assets for further analysis 
+**without assets
+reg prcodavg_log weekly_death sic sales_before_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, robust
+eststo basic_log_7
+estat vif
+esttab
+esttab using further_regression_basic_log.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+
+**include company fixed effects to the last setup
+xtreg prcodavg_log weekly_death sic sales_before_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, fe vce(robust)
+eststo company_fixed_effect 
+**time fixed effects(with weeks)
+reghdfe prcodavg_log weekly_death sales_before_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, absorb(time_variable) vce(robust)
+eststo time_fixed_effects
+**check time fixed effects year 
+reghdfe prcodavg_log weekly_death sales_before_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, absorb(fyearq) vce(robust)
+eststo time_fixed_year
+**use both company and time (week) fixed effects 
+reghdfe prcodavg_log weekly_death sales_before_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, absorb(time_variable gvkeyid) vce(robust)
+eststo both_fixed_effects
+esttab 
+esttab using fixed_effects.tex,replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear  
+
+**following part evaluates the identification channel 
+**so far baseline regression 
+reg prcodavg_log weekly_death sales_before_log sic cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, robust
+eststo base
+**regression with potential instrumenmts 
+reg prcodavg_log weekly_death sales_before_log sic cash_log debt_to_assets age popu polit weekly_cases if log_dummy==0 & sales_dummy==0, robust
+eststo base_with_all_instruments
+estat 
+estat start_IV.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear
+
+**what is impacting the weekly death?
+**hypothesis is popu, age, polit_check and weekly_cases
+reg weekly_death age popu polit_check weekly_cases if log_dummy==0 & sales_dummy==0, robust
+eststo IV_covid_test
+predict resid_death_final, resid
+estat vif
+reg prcodavg_log weekly_death sales_before_log sic cash_log debt_to_assets resid_death_final if log_dummy==0 & sales_dummy==0, robust 
+test resid_death_final
+**Durbin-Wu Husman test speaks in favor ofg not suited as an instrument 
+**how the IV would look 
+ivregress 2sls prcodavg_log sales_before_log sic cash_log debt_to_assets (weekly_death=weekly_cases age popu polit_check) if log_dummy==0 & sales_dummy==0, vce(robust) 
+
+**test IV without weekly_cases
+**test only politics and age and popu
+reg weekly_death age polit_check popu if log_dummy==0 & sales_dummy==0, robust 
+eststo IV_covid_test_2
+predict resid_test_2, resid
+reg prcodavg_log weekly_death sales_before_log sic cash_log debt_to_assets resid_test_2 if log_dummy==0 & sales_dummy==0, robust 
+test resid_test_2
+**test speaks in favor of using it as an instrument 
+esttab 
+esttab IV_covid.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear
+
+**IV regression 
+**first install packages
+ssc install ivreg2
+ssc install ranktest
+**for comparison 
+reg prcodavg_log weekly_death sales_before_log sic cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, robust
+eststo IV_weekly_second
+ivreg2 prcodavg_log sales_before_log sic cash_log debt_to_assets (weekly_death= popu age polit_check) if log_dummy==0 & sales_dummy==0, robust ffirst
+eststo IV_weekly_second_2
+**the test look fine
+esttab
+esttab IV_weekly_second.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+
+
+**test the stay_home_channel
+reg prcodavg stay_home_order, robust 
+eststo IV_stay_home
+reg prcodavg_log stay_home_order, robust 
+eststo IV_stay_home_2
+
+**Durbin-Wu Hausman test 
+reg stay_home_order weekly_cases polit_check if log_dummy==0 & sales_dummy==0, robust
+**influence 
+predict resid_test_stay_home, resid 
+reg prcodavg_log stay_home_order sales_before_log cash_log sic debt_to_assets resid_test_stay_home if log_dummy==0 & sales_dummy==0, robust
+eststo IV_stay_home_3
+**significant!!
+test resid_test_stay_home
+
+**used as IV
+**for comparison 
+reg prcodavg_log stay_home_order sales_before_log cash_log sic debt_to_assets if log_dummy==0 & sales_dummy==0, robust 
+eststo IV_stay_home_4
+ivreg2 prcodavg_log sales_before_log cash_log sic debt_to_assets (stay_home_order= polit_check weekly_cases) if log_dummy==0 & sales_dummy==0, robust 
+eststo IV_stay_home_5
+
+**case with age 
+reg stay_home_order age weekly_cases polit_check if log_dummy==0 & sales_dummy==0, robust
+predict resid_test_stay_home_2, resid
+
+reg prcodavg_log stay_home_order sales_before_log cash_log sic debt_to_assets resid_test_stay_home_2 if log_dummy==0 & sales_dummy==0, robust 
+eststo IV_stay_home_6
+**not significant; not suited as IV
+test resid_test_stay_home 
+**try IV!
+**comparison 
+reg prcodavg_log stay_home_order sales_before_log cash_log sic debt_to_assets if log_dummy==0 & sales_dummy==0, robust 
+ivreg2 prcodavg_log sales_before_log cash_log sic debt_to_assets (stay_home_order= polit_check weekly_cases age) if log_dummy==0 & sales_dummy==0, robust 
+eststo IV_stay_home_7
+**weak identification test !
+esttab 
+esttab IV_stay_home.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+
+**Robustness Check: death per inhabitants without penny stocks as well
+**for comparison 
+reg prcodavg_log weekly_death  if log_dummy==0 , robust 
+reg prcodavg_log death_fraction if log_dummy==0, robust
+eststo death_fraction
+ 
+reg prcodavg_log weekly_death sic if log_dummy==0, robust 
+reg prcodavg_log death_fraction sic if log_dummy==0, robust 
+eststo death_fraction_1
+
+reg prcodavg_log weekly_death sic sales_before_log if log_dummy==0 & sales_dummy==0, robust 
+reg prcodavg_log death_fraction sic sales_before_log  if log_dummy==0 & sales_dummy==0 , robust 
+eststo death_fraction_2
+
+reg prcodavg_log weekly_death sic sales_before_log cash_log if log_dummy==0 & sales_dummy==0 , robust 
+reg prcodavg_log death_fraction sic sales_before_log cash_log if log_dummy==0 & sales_dummy==0, robust
+eststo death_fraction_3 
+
+reg prcodavg_log weekly_death sic sales_before_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0 , robust 
+reg prcodavg_log death_fraction sic sales_before_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, robust 
+eststo death_fraction_4
+
+esttab 
+esttab using death_fraction.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+
+**robustness check outlier
+**one for company size 
+**another for marketvalue 
+tabstat mkvaltq, stats(p90) 
+tabstat atq, stats(p90)
+
+**test when largest 10% of companies are excluded
+reg prcodavg_log weekly_death if atq<16428.9, robust 
+eststo rub
+reg prcodavg_log weekly_death, robust 
+reg prcodavg_log weekly_death sic  if atq<16428.9, robust
+eststo rub_1
+reg prcodavg_log weekly_death sic, robust
+reg prcodavg_log weekly_death sic sales_before_log if atq<16428.9, robust
+eststo rub_2
+reg prcodavg_log weekly_death sic sales_before_log, robust
+reg prcodavg_log weekly_death sic sales_before_log cash_log if atq<16428.9, robust
+eststo rub_3
+reg prcodavg_log weekly_death sic sales_before_log cash_log,robust
+reg prcodavg_log weekly_death sic sales_before_log cash_log debt_to_assets if atq<16428.9, robust
+eststo rub_4
+reg prcodavg_log weekly_death sic sales_before_log cash_log debt_to_assets, robust 
+esttab 
+esttab using rub_1.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+
+**test when companies with the 10% highest marketvalue are excluded 
+reg prcodavg_log weekly_death if mkvaltq<19100.34, robust 
+eststo rub_2
+reg prcodavg_log weekly_death, robust 
+reg prcodavg_log weekly_death sic  if mkvaltq<19100.34, robust
+eststo rub_2_2
+reg prcodavg_log weekly_death sic, robust
+reg prcodavg_log weekly_death sic sales_before_log if mkvaltq<19100.34, robust
+eststo rub_2_3
+reg prcodavg_log weekly_death sic sales_before_log, robust
+reg prcodavg_log weekly_death sic sales_before_log cash_log if mkvaltq<19100.34, robust
+eststo rub_2_4
+reg prcodavg_log weekly_death sic sales_before_log cash_log,robust
+reg prcodavg_log weekly_death sic sales_before_log cash_log debt_to_assets if mkvaltq<19100.34, robust
+eststo rub_2_5
+reg prcodavg_log weekly_death sic sales_before_log cash_log debt_to_assets, robust 
+esttab 
+esttab using rub_2.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+est clear 
+
+*//IV
+clear all
+cd "Z:\SP PHD U3\Regressions\Regression_handin"
+use Newest_data.dta, clear
+*//IV
+*new data for IV
+rename _merge _merge3
+merge m:1 state using HouseholdfeatureData.dta
+gen popden = popu/landarea_km
+label var popden "population density per sqr-km"
+*with population (not significant)
+
+ivregress 2sls prcodavg (stay_home_order=pop), first
+*********
+reg prcodavg weekly_death
+reg prcodavg weekly_death,r
+ivregress 2sls prcodavg (weekly_death=pop),r
+test weekly_death
+**testing endogenous here will be testing robustness
+estat endogenous
+****
+ivregress 2sls prcodavg (weekly_death=pop), first
+estat endogenous
+*
+ivregress 2sls prcodavg (weekly_death= TotalPopulation65yearsandover),first
+estat endogenous
+test weekly_death
+
+
+*
+*testing politics
+*insignificant
+ivregress 2sls prcodavg (stay_home_order=polit), first
+*********
+reg prcodavg weekly_death
+reg prcodavg weekly_death,r
+ivregress 2sls prcodavg (weekly_death=polit),r
+test weekly_death
+**testing endogenous here will be testing robustness
+estat endogenous
+****
+ivregress 2sls prcodavg (weekly_death=polit), first
+estat endogenous
+
+
+*testing politics_2
+ivregress 2sls prcodavg (stay_home_order=polit_last), first
+ivregress 2sls prcodavg (weekly_death=polit_last), first
+
+
+ivregress 2sls prcodavg (weekly_death=popu),first
+ivregress 2sls prcodavg (weekly_death=popden),first
+ivregress 2sls prcodavg (weekly_death=polit),first
+ivregress 2sls prcodavg (weekly_death=polit_last),first
+ivregress 2sls prcodavg (weekly_death= householdsizeavg ),first
+ivregress 2sls prcodavg (weekly_death= medianage ),first
+ivregress 2sls prcodavg (weekly_death= housenovehicle_calc ),first
+ivregress 2sls prcodavg (weekly_death= nocarnorent ),first
+ivregress 2sls prcodavg (weekly_death= TotalHouseholdswithoneormorepeop ),first
+ivregress 2sls prcodavg (weekly_death= unisured_percent_2019 ),first
+
+
