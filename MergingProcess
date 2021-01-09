@@ -1,0 +1,775 @@
+*This is a Stata Code
+*Merging Process from Raw data
+*RM Finance 2020-21
+*Uni Bonn
+*Stock Price Impact due to Covid
+*2020-21
+*Sophie and Mi-Yun
+
+
+*//Stock Price
+*//Compstat (Balance Sheet)
+*//Covid Cases and Policies
+*//Other Featuers
+	*Industries dummy
+	*share of population over 65- later used
+	*State Representation in the Senate
+		**0 is Democratic 
+		**1 is Republican 
+		**2 is one Rebublican and one Democratic Senator 
+	*Population, age, vehicles
+	
+*// Stock Price
+*originally daily data from 2019-2020, repeated several times with its quarter
+***File Stock_weekly is a manually generated empty data file.
+*Steps
+***generate new combined files: taking averages
+***append all data into one file
+//Steps
+	//1. ***generate new combined files***
+		**2019
+		**2020
+	//2. ***append all data into one file***
+***File Stock_weekly is a manually generated empty data file.
+
+*Housekeeping
+clear all
+//1. ***generate new combined files***
+ ***generate new combined files***
+*cd "F:\Stock"
+cd "Z:\SP PHD U3\Stock"
+use Stock_weekly_avg.dta, clear
+***2019
+use Stock_weekly_avg.dta, clear
+append using Stock\Stock_2019Q1.dta
+drop if ID ==""
+*There should not be any companies without name or issue id
+merge 1:1 nID datadate using Addon\Addon_2019Q1.dta 
+*merge data with add-on features such as industry classification
+drop if missing(state) 
+*Take only US data, must contain state variables
+*set panel data
+xtset nID datadate
+*Identify which day of week it is.
+gen days_of_week = dow(datadate)
+*Stock market only works from Monday to Friday
+tab days_of_week
+label var days_of_week "days of week"
+
+*****
+*match the months in each file
+gen month = month(datadate)
+tab month
+label var month "month"
+gen yr =year(datadate)
+label var yr "year"
+gen week = week(datadate)
+gen mon_yr = ym(yr, month)
+format mon_yr %tm
+label var mon_yr "Year and month of datadates"
+
+encode conm, gen (nconm)
+label var nconm "destringed company names"
+*Take average of price variables
+bysort gvkey nconm week: egen prccdavg= mean(prccd)
+label var prccdavg "Price-Close-Week-Average"
+bysort gvkey nconm week: egen prcldavg= mean(prcld)
+label var prcldavg "Price-Low-Week-Average"
+bysort gvkey nconm week: egen prcodavg= mean(prcod)
+label var prcodavg "Price-Open-Week-Average"
+bysort gvkey nconm week: egen epsavg= mean(eps)
+label var epsavg "Week average of EPS"
+bysort gvkey nconm week: egen cshocavg= mean(cshoc)
+label var cshocavg "shares outstanding, Week average"
+bysort gvkey nconm week: egen trfdavg= mean(trfd)
+label var trfdavg "total return factor, Week average"
+
+*check duplicates, copies should NOT exceed 5, becuase 5 working days
+duplicates report gvkey nconm week prccdavg prcldavg prcodavg epsavg cshocavg trfdavg
+duplicates drop gvkey nconm week prccdavg prcldavg prcodavg epsavg cshocavg trfdavg, force
+*!!!From Here on, ONLY use avg data!!!
+save Stock_Addon\Stock_Addon_weekavg_2019Q1.dta, replace
+
+*Repeat several times for each quarter
+use Stock_weekly_avg.dta, clear
+append using Stock\Stock_2019Q2.dta
+drop if ID ==""
+*There should not be any companies with name or issue id
+merge 1:1 nID datadate using Addon\Addon_2019Q2.dta 
+*merge data with add-on features
+drop if missing(state) 
+*Take only US data, must contain state variables
+*set panel data
+xtset nID datadate
+*Identify which day of week it is.
+gen days_of_week = dow(datadate)
+*Stock market only works from Monday to Friday
+tab days_of_week
+label var days_of_week "days of week"
+
+*****
+*match the months in each file
+gen month = month(datadate)
+tab month
+label var month "month"
+gen yr =year(datadate)
+label var yr "year"
+gen week = week(datadate)
+gen mon_yr = ym(yr, month)
+format mon_yr %tm
+label var mon_yr "Year and month of datadates"
+
+encode conm, gen (nconm)
+label var nconm "destringed company names"
+*Take average of price variables
+bysort gvkey nconm week: egen prccdavg= mean(prccd)
+label var prccdavg "Price-Close-Week-Average"
+bysort gvkey nconm week: egen prcldavg= mean(prcld)
+label var prcldavg "Price-Low-Week-Average"
+bysort gvkey nconm week: egen prcodavg= mean(prcod)
+label var prcodavg "Price-Open-Week-Average"
+bysort gvkey nconm week: egen epsavg= mean(eps)
+label var epsavg "Week average of EPS"
+bysort gvkey nconm week: egen cshocavg= mean(cshoc)
+label var cshocavg "shares outstanding, Week average"
+bysort gvkey nconm week: egen trfdavg= mean(trfd)
+label var trfdavg "total return factor, Week average"
+
+*check duplicates, copies should NOT exceed 5, becuase 5 working days
+duplicates report gvkey nconm week prccdavg prcldavg prcodavg epsavg cshocavg trfdavg
+duplicates drop gvkey nconm week prccdavg prcldavg prcodavg epsavg cshocavg trfdavg, force
+*!!!From Here on, ONLY use avg data!!!
+save Stock_Addon\Stock_Addon_weekavg_2019Q2.dta, replace
+***
+use Stock_weekly_avg.dta, clear
+append using Stock\Stock_2019Q3.dta
+drop if ID ==""
+*There should not be any companies with name or issue id
+merge 1:1 nID datadate using Addon\Addon_2019Q3.dta 
+*merge data with add-on features
+drop if missing(state) 
+*Take only US data, must contain state variables
+*set panel data
+xtset nID datadate
+*Identify which day of week it is.
+gen days_of_week = dow(datadate)
+*Stock market only works from Monday to Friday
+tab days_of_week
+label var days_of_week "days of week"
+
+*****
+*match the months in each file
+gen month = month(datadate)
+tab month
+label var month "month"
+gen yr =year(datadate)
+label var yr "year"
+gen week = week(datadate)
+gen mon_yr = ym(yr, month)
+format mon_yr %tm
+label var mon_yr "Year and month of datadates"
+
+encode conm, gen (nconm)
+label var nconm "destringed company names"
+*Take average of price variables
+bysort gvkey nconm week: egen prccdavg= mean(prccd)
+label var prccdavg "Price-Close-Week-Average"
+bysort gvkey nconm week: egen prcldavg= mean(prcld)
+label var prcldavg "Price-Low-Week-Average"
+bysort gvkey nconm week: egen prcodavg= mean(prcod)
+label var prcodavg "Price-Open-Week-Average"
+bysort gvkey nconm week: egen epsavg= mean(eps)
+label var epsavg "Week average of EPS"
+bysort gvkey nconm week: egen cshocavg= mean(cshoc)
+label var cshocavg "shares outstanding, Week average"
+bysort gvkey nconm week: egen trfdavg= mean(trfd)
+label var trfdavg "total return factor, Week average"
+
+*check duplicates, copies should NOT exceed 5, becuase 5 working days
+duplicates report gvkey nconm week prccdavg prcldavg prcodavg epsavg cshocavg trfdavg
+duplicates drop gvkey nconm week prccdavg prcldavg prcodavg epsavg cshocavg trfdavg, force
+*!!!From Here on, ONLY use avg data!!!
+save Stock_Addon\Stock_Addon_weekavg_2019Q3.dta, replace
+
+***
+use Stock_weekly_avg.dta, clear
+append using Stock\Stock_2019Q4.dta
+drop if ID ==""
+*There should not be any companies with name or issue id
+merge 1:1 nID datadate using Addon\Addon_2019Q4.dta 
+*merge data with add-on features
+drop if missing(state) 
+*Take only US data, must contain state variables
+*set panel data
+xtset nID datadate
+*Identify which day of week it is.
+gen days_of_week = dow(datadate)
+*Stock market only works from Monday to Friday
+tab days_of_week
+label var days_of_week "days of week"
+
+*****
+*match the months in each file
+gen month = month(datadate)
+tab month
+label var month "month"
+gen yr =year(datadate)
+label var yr "year"
+gen week = week(datadate)
+gen mon_yr = ym(yr, month)
+format mon_yr %tm
+label var mon_yr "Year and month of datadates"
+
+encode conm, gen (nconm)
+label var nconm "destringed company names"
+*Take average of price variables
+bysort gvkey nconm week: egen prccdavg= mean(prccd)
+label var prccdavg "Price-Close-Week-Average"
+bysort gvkey nconm week: egen prcldavg= mean(prcld)
+label var prcldavg "Price-Low-Week-Average"
+bysort gvkey nconm week: egen prcodavg= mean(prcod)
+label var prcodavg "Price-Open-Week-Average"
+bysort gvkey nconm week: egen epsavg= mean(eps)
+label var epsavg "Week average of EPS"
+bysort gvkey nconm week: egen cshocavg= mean(cshoc)
+label var cshocavg "shares outstanding, Week average"
+bysort gvkey nconm week: egen trfdavg= mean(trfd)
+label var trfdavg "total return factor, Week average"
+
+*check duplicates, copies should NOT exceed 5, becuase 5 working days
+duplicates report gvkey nconm week prccdavg prcldavg prcodavg epsavg cshocavg trfdavg
+duplicates drop gvkey nconm week prccdavg prcldavg prcodavg epsavg cshocavg trfdavg, force
+*!!!From Here on, ONLY use avg data!!!
+save Stock_Addon\Stock_Addon_weekavg_2019Q4.dta, replace
+***
+***2020
+use Stock_weekly_avg.dta, clear
+append using Stock\Stock_2020Q1.dta
+drop if ID ==""
+*There should not be any companies with name or issue id
+merge 1:1 nID datadate using Addon\Addon_2020Q1.dta 
+*merge data with add-on features
+drop if missing(state) 
+*Take only US data, must contain state variables
+*set panel data
+xtset nID datadate
+*Identify which day of week it is.
+gen days_of_week = dow(datadate)
+*Stock market only works from Monday to Friday
+tab days_of_week
+label var days_of_week "days of week"
+
+encode conm, gen (nconm)
+label var nconm "destringed company names"
+*****
+*match the months in each file
+gen month = month(datadate)
+tab month
+label var month "month"
+gen yr =year(datadate)
+label var yr "year"
+gen week = week(datadate)
+gen mon_yr = ym(yr, month)
+format mon_yr %tm
+label var mon_yr "Year and month of datadates"
+
+*Take average of price variables
+bysort gvkey nconm week: egen prccdavg= mean(prccd)
+label var prccdavg "Price-Close-Week-Average"
+bysort gvkey nconm week: egen prcldavg= mean(prcld)
+label var prcldavg "Price-Low-Week-Average"
+bysort gvkey nconm week: egen prcodavg= mean(prcod)
+label var prcodavg "Price-Open-Week-Average"
+bysort gvkey nconm week: egen epsavg= mean(eps)
+label var epsavg "Week average of EPS"
+bysort gvkey nconm week: egen cshocavg= mean(cshoc)
+label var cshocavg "shares outstanding, Week average"
+bysort gvkey nconm week: egen trfdavg= mean(trfd)
+label var trfdavg "total return factor, Week average"
+
+*check duplicates, copies should NOT exceed 5, becuase 5 working days
+duplicates report gvkey nconm week prccdavg prcldavg prcodavg epsavg cshocavg trfdavg
+duplicates drop gvkey nconm week prccdavg prcldavg prcodavg epsavg cshocavg trfdavg, force
+*!!!From Here on, ONLY use avg data!!!
+save Stock_Addon\Stock_Addon_weekavg_2020Q1.dta, replace
+
+***Repeat for all files*** 
+***CANNOT use loop, because doube level loop cannot identify two corresponding file!!!***
+
+**2018**
+use Stock_weekly_avg.dta, clear
+append using Stock\Stock_2020Q2.dta
+drop if ID ==""
+*There should not be any companies with name or issue id
+merge 1:1 nID datadate using Addon\Addon_2020Q2.dta 
+*merge data with add-on features
+drop if missing(state) 
+*Take only US data, must contain state variables
+*set panel data
+xtset nID datadate
+*Identify which day of week it is.
+gen days_of_week = dow(datadate)
+*Stock market only works from Monday to Friday
+tab days_of_week
+label var days_of_week "days of week"
+
+*****
+*match the months in each file
+gen month = month(datadate)
+tab month
+label var month "month"
+gen yr =year(datadate)
+label var yr "year"
+gen week = week(datadate)
+gen mon_yr = ym(yr, month)
+format mon_yr %tm
+label var mon_yr "Year and month of datadates"
+
+encode conm, gen (nconm)
+label var nconm "destringed company names"
+*Take average of price variables
+bysort gvkey nconm week: egen prccdavg= mean(prccd)
+label var prccdavg "Price-Close-Week-Average"
+bysort gvkey nconm week: egen prcldavg= mean(prcld)
+label var prcldavg "Price-Low-Week-Average"
+bysort gvkey nconm week: egen prcodavg= mean(prcod)
+label var prcodavg "Price-Open-Week-Average"
+bysort gvkey nconm week: egen epsavg= mean(eps)
+label var epsavg "Week average of EPS"
+bysort gvkey nconm week: egen cshocavg= mean(cshoc)
+label var cshocavg "shares outstanding, Week average"
+bysort gvkey nconm week: egen trfdavg= mean(trfd)
+label var trfdavg "total return factor, Week average"
+
+*check duplicates, copies should NOT exceed 5, becuase 5 working days
+duplicates report gvkey nconm week prccdavg prcldavg prcodavg epsavg cshocavg trfdavg
+duplicates drop gvkey nconm week prccdavg prcldavg prcodavg epsavg cshocavg trfdavg, force
+*!!!From Here on, ONLY use avg data!!!
+save Stock_Addon\Stock_Addon_weekavg_2020Q2.dta, replace
+***
+use Stock_weekly_avg.dta, clear
+append using Stock\Stock_2020Q3.dta
+drop if ID ==""
+*There should not be any companies with name or issue id
+merge 1:1 nID datadate using Addon\Addon_2020Q3.dta 
+*merge data with add-on features
+drop if missing(state) 
+*Take only US data, must contain state variables
+*set panel data
+xtset nID datadate
+*Identify which day of week it is.
+gen days_of_week = dow(datadate)
+*Stock market only works from Monday to Friday
+tab days_of_week
+label var days_of_week "days of week"
+
+*****
+*match the months in each file
+gen month = month(datadate)
+tab month
+label var month "month"
+gen yr =year(datadate)
+label var yr "year"
+gen week = week(datadate)
+gen mon_yr = ym(yr, month)
+format mon_yr %tm
+label var mon_yr "Year and month of datadates"
+
+encode conm, gen (nconm)
+label var nconm "destringed company names"
+*Take average of price variables
+bysort gvkey nconm week: egen prccdavg= mean(prccd)
+label var prccdavg "Price-Close-Week-Average"
+bysort gvkey nconm week: egen prcldavg= mean(prcld)
+label var prcldavg "Price-Low-Week-Average"
+bysort gvkey nconm week: egen prcodavg= mean(prcod)
+label var prcodavg "Price-Open-Week-Average"
+bysort gvkey nconm week: egen epsavg= mean(eps)
+label var epsavg "Week average of EPS"
+bysort gvkey nconm week: egen cshocavg= mean(cshoc)
+label var cshocavg "shares outstanding, Week average"
+bysort gvkey nconm week: egen trfdavg= mean(trfd)
+label var trfdavg "total return factor, Week average"
+
+*check duplicates, copies should NOT exceed 5, becuase 5 working days
+duplicates report gvkey nconm week prccdavg prcldavg prcodavg epsavg cshocavg trfdavg
+duplicates drop gvkey nconm week prccdavg prcldavg prcodavg epsavg cshocavg trfdavg, force
+*!!!From Here on, ONLY use avg data!!!
+save Stock_Addon\Stock_Addon_weekavg_2020Q3.dta, replace
+
+***
+//2. ***append all data into one file***
+***append all data into one file
+*cd "F:\Stock"
+cd "Z:\SP PHD U3\Stock"
+use Stock_weekly_avg.dta, clear
+append using Stock_Addon\Stock_Addon_weekavg_2018q1.dta
+*Only keep data with company names and were matched
+drop if ID =="" | _merge != 3
+save Stock_weekly_avg.dta, replace
+*repear appending steps (Loop requires more memories)
+append using Stock_Addon\Stock_Addon_weekavg_2018q2.dta
+drop if ID =="" | _merge != 3
+save Stock_weekly_avg.dta, replace
+append using Stock_Addon\Stock_Addon_weekavg_2018q3.dta
+drop if ID =="" | _merge != 3
+save Stock_weekly_avg.dta, replace
+append using Stock_Addon\Stock_Addon_weekavg_2018q4.dta
+drop if ID =="" | _merge != 3
+save Stock_weekly_avg.dta, replace
+append using Stock_Addon\Stock_Addon_weekavg_2019Q1.dta
+drop if ID =="" | _merge != 3
+save Stock_weekly_avg.dta, replace
+append using Stock_Addon\Stock_Addon_weekavg_2019q2.dta
+drop if ID =="" | _merge != 3
+save Stock_weekly_avg.dta, replace
+append using Stock_Addon\Stock_Addon_weekavg_2019q3.dta
+drop if ID =="" | _merge != 3
+save Stock_weekly_avg.dta, replace
+append using Stock_Addon\Stock_Addon_weekavg_2019q4.dta
+drop if ID =="" | _merge != 3
+save Stock_weekly_avg.dta, replace
+append using Stock_Addon\Stock_Addon_weekavg_2020q1.dta
+drop if ID =="" | _merge != 3
+save Stock_weekly_avg.dta, replace
+append using Stock_Addon\Stock_Addon_weekavg_2020q2.dta
+drop if ID =="" | _merge != 3
+save Stock_weekly_avg.dta, replace
+append using Stock_Addon\Stock_Addon_weekavg_2020q3.dta
+drop if ID =="" | _merge != 3
+save Stock_weekly_avg.dta, replace
+*Deal with duplicates, because running append several times cause multiple same data
+
+append using Stock_Q4_2020_weekavg.dta
+
+duplicates report
+duplicates drop
+duplicates report
+
+*summarize
+*plot
+*histogram
+*generate
+rename yr year
+replace month=month(datadate)
+replace year= year(datadate)
+
+*add on the high price average data each for each
+drop _merge
+merge 1:1 conm datadate using Stock_HighPrice.dta
+drop _merge
+sort gvkey week year
+save Stock_weekly_avg.dta, replace
+
+
+******
+*//Compstat (Balance Sheet)
+
+*cd "F:\"
+use Stock_weekly_avg_2019-20_1.dta, clear
+*drop _merge
+*Merge with Compstat Balacne sheet data, identify with company codes, months and years
+merge m:1 gvkey month year using Compustat_Month_final_final_2.dta
+drop mon_yr
+gen mon_yr = ym(year, month)
+format %tm mon_yr
+tab mon_yr
+sort gvkey week mon_yr _merge
+drop if _merge!=3
+reg prccdavg atq
+save Covid_Compstat_Stock_weekly_1.dta, replace
+********
+
+*//Covid Cases and Policies
+*Make sure previously kept only balanced data
+tab _merge
+drop _merge
+*US Covid Cases
+*Merge US Covid to weekly first
+merge m:1 week year using Covid_US_final5.dta
+*4 November observations dropped
+drop if _merge==2
+replace US_new_cases=0 if missing( US_new_cases)
+replace US_new_death=0 if missing( US_new_death)
+replace US_tot_death=0 if missing( US_tot_death)
+replace US_weekly_death = 0 if missing(US_weekly_death)
+*missing number matched _merge==1
+drop _merge
+
+*Merge Covid Policies
+merge m:1 state week year using Covid_policy.dta
+drop _merge
+
+*merge populations
+merge m:1 state using Inhabitants_final_final.dta
+drop _merge
+
+*Merge Covid to weekly
+merge m:1 state week year using Covid_final_data_end_november.dta
+reg prccdavg atq dlcq new_cases new_death
+*label var new_cases_sum "New Covid Cases, monthly sum"
+*label var tot_death_sum "Total death cases, monthly sum"
+*label var new_death "Covid Death Cases, monthly sum"
+label var new_cases "New Covid Cases"
+label var tot_death "Total death cases"
+label var new_death "Covid Death Cases"
+replace new_cases=0 if missing( new_cases)
+replace new_death=0 if missing( new_death)
+replace tot_death=0 if missing( tot_death)
+replace weekly_death = 0 if missing(weekly_death)
+
+*drop Canadian data
+drop if state =="AB" | state =="MB"| state =="NB"| state=="NF" | state=="NS"|state=="ON"| state=="PR"| state=="QC"|state=="SK"
+drop if state =="US"
+save US_Covid_Compstat_Stock_weekly_1.dta, replace
+
+*//Other Features
+**data already merged 
+clear all 
+**import data
+use "US_Covid_Compstat_Stock_weekly_1_final.dta"
+
+duplicates tag gvkey state week year, generate (duplicates)
+**Check  for duplicates
+duplicates drop gvkey week fyearq, force 
+
+drop count_gvkey
+egen count_gvkey=count(gvkey), by (gvkey)
+tab count_gvkey
+drop if count_gvkey==0
+**some comapanies have gaps in observation data 
+**drop them if there is data for less than 70 weeks 
+drop if count_gvkey<=70
+
+replace weekly_death=0 if fyearq==2019
+destring gvkey, generate (gvkeyid)
+
+**generate the panel variable for weeks!
+gen time_variable=0
+replace time_variable=week if fyearq==2019
+replace time_variable=week+52 if fyearq==2020
+**check for duplicates as xtset not working with duplicates 
+duplicates drop gvkeyid time_variable, force  
+**check for duplicates as xtset not working with duplicates 
+
+**due to the original covid data there are 59 negative observations 
+**since mistake in original data drop them  
+drop if weekly_death<0 
+**drop the canada values!!
+**british Columbia
+drop if state=="BC" 
+**Ontario
+drop if state=="ON" 
+*Alberta
+drop if state=="AB"
+**Quebec
+drop if state=="QC"
+**Puerto rico
+drop if state=="PR"
+**Saskatchewan Canada
+drop if state=="SK"
+
+**drop Hawai since no Covid data available
+drop if state=="HI" 
+**drop Virgin Island 
+drop if state=="VI"
+*We already merged US data in the previous steps
+drop if state=="US"
+
+** compensate for missing values (no death) in week 1-5 of 2020
+replace weekly_death=0 if week<=5  
+
+**drop values from dataset that are not used for Covid 
+drop new_death tot_death new_cases tot_cases_1 key US_every_7 tot_cases US_new_cases US_new_death US_weekly_death US_tot_cases_1
+
+encode state, generate(state_number)
+rename _merge _merge_old
+**add the total population of a state
+merge m:1 state using "Inhabitants_final_final.dta", force
+**death per population, later used as robustness check 
+gen death_fraction=(weekly_death/popu)*100
+label var death_fraction "death fraction"
+
+rename _merge _merge2
+**Add Covid US Data
+merge m:1 week using "Covid_US_final_final.dta", force
+rename _merge _merge_US_final
+**account for week 1-5 that have zero cases
+replace US_weekly_death=0 if week<=5
+
+**Add the weekly case data
+merge m:1 state week using "Weekly_Cases_summed.dta", force
+destring weekly_cases, generate(weekly_cases_long)
+drop weekly_cases 
+rename weekly_cases_long weekly_cases
+replace weekly_cases=0 if week<=4
+replace weekly_cases=0 if fyearq==2019
+
+*//Other Features
+*Industries dummy
+**generate industry dummy after Standard Industry Classification main groups (SIC)- later used
+gen sic_dummy=0
+destring sic, replace 
+replace sic_dummy=1 if sic>=1000 & sic<=1499
+**mining
+replace sic_dummy=2 if sic>=1500 & sic<=1799
+**construction
+replace sic_dummy=3 if sic>=2000 & sic<=3999
+**manufacturing
+replace sic_dummy=4 if sic>=4000 & sic<=4999
+**Trasport, Communication, Electric
+replace sic_dummy=5 if sic>=5000 & sic<=5199
+**Wholesale Trade
+replace sic_dummy=6 if sic>=5200 & sic<=5999
+**Retail Trade
+replace sic_dummy=7 if sic>=6000 & sic<=6799
+**finance, Insurance and real estate
+replace sic_dummy=8 if sic>=7000 & sic<=8999
+**services
+replace sic_dummy=9 if sic>=9100 &sic<=9729
+**Public Administration- no observation
+replace sic_dummy=10 if sic_dummy==0
+**Agriculture, Foresty, Fishing
+replace sic_dummy=0 if sic_dummy==.
+
+*65- age in each states
+**add the data on share of population over 65- later used
+generate age=0
+replace age=20.5 if state=="FL"
+replace age=20.6 if state=="ME"
+replace age=19.9 if state=="WV"
+replace age=19.4 if state=="VT"
+replace age=18.7 if state=="DE"
+replace age=18.7 if state=="MT"
+replace age=18.2 if state=="PA"
+replace age=18.1 if state=="NH"
+replace age=17.7 if state=="SC" 
+replace age=17.6 if state=="OR"
+replace age=17.5 if state=="AZ" 
+replace age=17.5 if state=="NM"
+replace age=17.2 if state=="CT" | state=="MI" | state=="RI" 
+replace age=17.1 if state=="IA" | state=="OH"
+replace age=17 if state=="AR" | state=="WI"
+replace age=16.9 if state=="AL" | state=="MO"
+replace age=16.6 if state=="SD"
+replace age=16.5 if state=="MA" |state=="WY"
+replace age=16.4 if state=="KY" |state=="NY" |state=="TN"
+replace age=16.3 if state=="NC" 
+replace age=16.1 if state=="NJ"
+replace age=15.9 if state=="ID" | state=="KS" | state=="MN" | state=="MS"
+replace age=15.8 if state=="IN"
+replace age=15.7 if state=="NE" | state=="NV" | state=="OK"
+replace age=15.6 if state=="IL"
+replace age=15.4 if state=="LA" | state=="MD"| state=="VA" | state=="WA"
+replace age=15.3 if state=="ND"
+replace age=14.3 if state=="CA" 
+replace age=14.2 if state=="CO"
+replace age=13.9 if state=="GA" 
+replace age=12.6 if state=="TX" 
+replace age=11.8 if state=="AK"
+replace age=11.1 if state=="UT"
+
+**replace 2019 values for stay home order with zero, since no stay home order was in place 
+gen dummy_stay_home=0
+replace dummy_stay_home=1 if state=="FL" |state=="CA" |state=="NY" |state=="IL" | state=="TX" |state=="NJ" |state=="MA" |state=="PA" |state=="CO" 
+gen dummy_stay_home1=0
+replace dummy_stay_home1=1 if dummy_stay_home==1 & fyearq==2019
+replace stay_home_order=0 if dummy_stay_home1==1
+
+
+**update stay home order collected with new values till week 50 (so far till week 44)
+replace stay_home_order=1 if state=="CA" | state=="TX" | state=="IL" | state=="CO" | state=="NY" & week>44 
+replace stay_home_order=2 if state=="CA" & week>=47 & week<=50
+replace stay_home_order=2 if state=="NY" & week>=47 & week<=50
+replace stay_home_order=2 if state=="CO" & week>=37 & week<=50
+replace stay_home_order=2 if state=="IL" & week>=48 & week<=50
+replace stay_home_order=2 if state=="TX" & week>=46 & week<=50
+
+*State Representation in the Senate
+**generate the polit variables, that is the state representation in the Senate in the 117 US Congress
+**0 is Democratic 
+**1 is Republican 
+**2 is one Rebublican and one Democratic Senator 
+
+gen polit=0 
+replace polit=1 if state=="TX" 
+replace polit=1 if state=="FL"
+
+replace polit=1 if state=="OK" 
+replace polit=1 if state=="KS"
+
+replace polit=1 if state=="NE" 
+replace polit=1 if state=="ID"
+
+replace polit=1 if state=="UT" 
+replace polit=1 if state=="IA"
+
+replace polit=1 if state=="LA" 
+replace polit=1 if state=="MO"
+
+replace polit=1 if state=="AR" 
+replace polit=1 if state=="MS"
+
+replace polit=1 if state=="TN" 
+replace polit=1 if state=="KY"
+
+replace polit=1 if state=="IN" 
+replace polit=1 if state=="AK"
+
+replace polit=1 if state=="GA" 
+replace polit=1 if state=="SC"
+
+replace polit=1 if state=="NC" 
+
+
+replace polit=2 if state=="MT"
+replace polit=2 if state=="CO"
+
+
+replace polit=2 if state=="WI"
+replace polit=2 if state=="AL"
+
+
+replace polit=2 if state=="OH"
+replace polit=2 if state=="WV"
+
+
+replace polit=2 if state=="PA"
+
+**Also take 2 when one of the senators is independet (Maine Independent and Republican Vermont Independet and Democratic)
+replace polit=2 if state=="ME"
+replace polit=2 if state=="VT"
+
+
+**generate polit variable with last election this november for the new senate representation starting in January 2021
+gen polit_last=0 
+**O for Democratic 
+**1 Republican 
+replace polit_last=1 if state=="TX" | state=="ID" |state=="WY" | state=="MT" | state=="SD" |state=="NE" | state=="KS" | state=="OK" | state=="IA"  | state=="LA" | state=="AR"
+replace polit_last=1 if state=="MS" | state=="TN" | state=="AL" | state=="KY" | state=="ME" | state=="WV" | state=="NC" | state=="SC" 
+replace polit_last=1 if state=="AK"
+**for thoose who were no senate election this year take presidential election result of November 2020
+replace polit_last=1 if state=="UT" | state=="ND" | state=="MO"  | state=="FL" | state=="IN" | state=="OH" 
+
+**Polit variable only Republican or Democratic but not the states with mixed representation  
+gen polit_check=0 
+replace polit_check=1 if polit==1
+
+**generate variable for leverage-used later 
+gen debt_to_assets=dlttq/atq
+
+save Newest_data.dta, replace
+
+
+
+cd "F:\Regressions\Regression_handin"
+*cd "Z:\SP PHD U3\Regressions\Regression_handin"
+use Newest_data.dta, clear
+*//IV
+*Population, age, vehicles
+*new data for IV
+rename _merge _merge3
+merge m:1 state using HouseholdfeatureData.dta
+gen popden = popu/landarea_km
+label var popden "population density per sqr-km"
+*with population (not significant)
