@@ -12,6 +12,260 @@
 *//IV
 
 *//Simple Regression
+***Mi Yun-Kuo Spophie Friebe 
+**Research Moduel finance 2020/2021
+***Impacts of Covid 19 
+***Regression part 
+
+**data already merged 
+clear all 
+**import data
+use "US_Covid_Compstat_Stock_weekly_1_final.dta"
+
+duplicates tag gvkey state week year, generate (duplicates)
+**Check  for duplicates
+
+duplicates drop gvkey week fyearq, force 
+
+drop count_gvkey
+egen count_gvkey=count(gvkey), by (gvkey)
+tab count_gvkey
+drop if count_gvkey==0
+**some comapanies have gaps in observation data 
+**drop them if there is data for less than 70 weeks 
+drop if count_gvkey<=70
+
+
+replace weekly_death=0 if fyearq==2019
+destring gvkey, generate (gvkeyid)
+**check how many companies are left
+unique gvkeyid, generate(sum_companies)
+
+**generate the panel variable for weeks!
+gen time_variable=0
+replace time_variable=week if fyearq==2019
+replace time_variable=week+52 if fyearq==2020
+**check for duplicates as xtset not working with duplicates 
+duplicates drop gvkeyid time_variable, force  
+**check for duplicates as xtset not working with duplicates 
+
+**due to the original covid data there are 59 negative observations 
+**since mistake in original data drop them  
+drop if weekly_death<0 
+**drop the canada values!!
+**british Columbia
+drop if state=="BC" 
+**Ontario
+drop if state=="ON" 
+*Alberta
+drop if state=="AB"
+**Quebec
+drop if state=="QC"
+**Puerto rico
+drop if state=="PR"
+**Saskatchewan Canada
+drop if state=="SK"
+
+**drop Hawai since no Covid data available
+drop if state=="HI" 
+**drop Virgin Island 
+drop if state=="VI"
+drop if state=="US"
+
+** compensate for missing values (no death) in week 1-5 of 2020
+replace weekly_death=0 if week<=5  
+
+**drop values from dataset that are not used for Covid 
+drop new_death tot_death new_cases tot_cases_1 key US_every_7 tot_cases US_new_cases US_new_death US_weekly_death US_tot_cases_1
+
+encode state, generate(state_number)
+rename _merge _merge_old
+**add the total population of a state
+merge m:1 state using "Inhabitants_final_final.dta", force
+**death per population, later used as robustness check 
+gen death_fraction=(weekly_death/popu)*100
+
+rename _merge _merge2
+**Add Covid US Data
+merge m:1 week using "Covid_US_final_final.dta", force
+rename _merge _merge_US_final
+**account for week 1-5 that have zero cases
+replace US_weekly_death=0 if week<=5
+
+**Add the weekly case data
+merge m:1 state week using "Weekly_Cases_summed.dta", force
+destring weekly_cases, generate(weekly_cases_long)
+drop weekly_cases 
+rename weekly_cases_long weekly_cases
+replace weekly_cases=0 if week<=4
+replace weekly_cases=0 if fyearq==2019
+
+**generate variable for leverage-used later 
+gen debt_to_assets=dlttq/atq
+
+**generate industry dummy after Standard Industry Classification main groups (SIC)- later used
+gen sic_dummy=0
+destring sic, replace 
+replace sic_dummy=1 if sic>=1000 & sic<=1499
+**mining
+replace sic_dummy=2 if sic>=1500 & sic<=1799
+**construction
+replace sic_dummy=3 if sic>=2000 & sic<=3999
+**manufacturing
+replace sic_dummy=4 if sic>=4000 & sic<=4999
+**Trasport, Communication, Electric
+replace sic_dummy=5 if sic>=5000 & sic<=5199
+**Wholesale Trade
+replace sic_dummy=6 if sic>=5200 & sic<=5999
+**Retail Trade
+replace sic_dummy=7 if sic>=6000 & sic<=6799
+**finance, Insurance and real estate
+replace sic_dummy=8 if sic>=7000 & sic<=8999
+**services
+replace sic_dummy=9 if sic>=9100 &sic<=9729
+**Public Administration- no observation
+replace sic_dummy=10 if sic_dummy==0
+**Agriculture, Foresty, Fishing
+replace sic_dummy=0 if sic_dummy==.
+
+**add the data on share of population over 65- later used
+generate age=0
+replace age=20.5 if state=="FL"
+replace age=20.6 if state=="ME"
+replace age=19.9 if state=="WV"
+replace age=19.4 if state=="VT"
+replace age=18.7 if state=="DE"
+replace age=18.7 if state=="MT"
+replace age=18.2 if state=="PA"
+replace age=18.1 if state=="NH"
+replace age=17.7 if state=="SC" 
+replace age=17.6 if state=="OR"
+replace age=17.5 if state=="AZ" 
+replace age=17.5 if state=="NM"
+replace age=17.2 if state=="CT" | state=="MI" | state=="RI" 
+replace age=17.1 if state=="IA" | state=="OH"
+replace age=17 if state=="AR" | state=="WI"
+replace age=16.9 if state=="AL" | state=="MO"
+replace age=16.6 if state=="SD"
+replace age=16.5 if state=="MA" |state=="WY"
+replace age=16.4 if state=="KY" |state=="NY" |state=="TN"
+replace age=16.3 if state=="NC" 
+replace age=16.1 if state=="NJ"
+replace age=15.9 if state=="ID" | state=="KS" | state=="MN" | state=="MS"
+replace age=15.8 if state=="IN"
+replace age=15.7 if state=="NE" | state=="NV" | state=="OK"
+replace age=15.6 if state=="IL"
+replace age=15.4 if state=="LA" | state=="MD"| state=="VA" | state=="WA"
+replace age=15.3 if state=="ND"
+replace age=14.3 if state=="CA" 
+replace age=14.2 if state=="CO"
+replace age=13.9 if state=="GA" 
+replace age=12.6 if state=="TX" 
+replace age=11.8 if state=="AK"
+replace age=11.1 if state=="UT"
+
+**replace 2019 values for stay home order with zero, since no stay home order was in place 
+gen dummy_stay_home=0
+replace dummy_stay_home=1 if state=="FL" |state=="CA" |state=="NY" |state=="IL" | state=="TX" |state=="NJ" |state=="MA" |state=="PA" |state=="CO" 
+gen dummy_stay_home1=0
+replace dummy_stay_home1=1 if dummy_stay_home==1 & fyearq==2019
+replace stay_home_order=0 if dummy_stay_home1==1
+
+
+**update stay home order collected with new values till week 50 (so far till week 44)
+replace stay_home_order=1 if state=="CA" | state=="TX" | state=="IL" | state=="CO" | state=="NY" & week>44 
+replace stay_home_order=2 if state=="CA" & week>=47 & week<=50
+replace stay_home_order=2 if state=="NY" & week>=47 & week<=50
+replace stay_home_order=2 if state=="CO" & week>=37 & week<=50
+replace stay_home_order=2 if state=="IL" & week>=48 & week<=50
+replace stay_home_order=2 if state=="TX" & week>=46 & week<=50
+
+**generate the polit variables, that is the state representation in the Senate in the 117 US Congress
+**0 is Democratic 
+**1 is Republican 
+**2 is one Rebublican and one Democratic Senator 
+
+gen polit=0 
+replace polit=1 if state=="TX" 
+replace polit=1 if state=="FL"
+
+replace polit=1 if state=="OK" 
+replace polit=1 if state=="KS"
+
+replace polit=1 if state=="NE" 
+replace polit=1 if state=="ID"
+
+replace polit=1 if state=="UT" 
+replace polit=1 if state=="IA"
+
+replace polit=1 if state=="LA" 
+replace polit=1 if state=="MO"
+
+replace polit=1 if state=="AR" 
+replace polit=1 if state=="MS"
+
+replace polit=1 if state=="TN" 
+replace polit=1 if state=="KY"
+
+replace polit=1 if state=="IN" 
+replace polit=1 if state=="AK"
+
+replace polit=1 if state=="GA" 
+replace polit=1 if state=="SC"
+
+replace polit=1 if state=="NC" 
+
+
+replace polit=2 if state=="MT"
+replace polit=2 if state=="CO"
+
+
+replace polit=2 if state=="WI"
+replace polit=2 if state=="AL"
+
+
+replace polit=2 if state=="OH"
+replace polit=2 if state=="WV"
+
+
+replace polit=2 if state=="PA"
+
+**Also take 2 when one of the senators is independet (Maine Independent and Republican Vermont Independet and Democratic)
+replace polit=2 if state=="ME"
+replace polit=2 if state=="VT"
+
+
+**generate polit variable with last election this november for the new senate representation starting in January 2021
+gen polit_last=0 
+**O for Democratic 
+**1 Republican 
+replace polit_last=1 if state=="TX" | state=="ID" |state=="WY" | state=="MT" | state=="SD" |state=="NE" | state=="KS" | state=="OK" | state=="IA"  | state=="LA" | state=="AR"
+replace polit_last=1 if state=="MS" | state=="TN" | state=="AL" | state=="KY" | state=="ME" | state=="WV" | state=="NC" | state=="SC" 
+replace polit_last=1 if state=="AK"
+**for thoose who were no senate election this year take presidential election result of November 2020
+replace polit_last=1 if state=="UT" | state=="ND" | state=="MO"  | state=="FL" | state=="IN" | state=="OH" 
+
+**Polit variable only Republican or Democratic but not the states with mixed representation  
+gen polit_check=0 if polit==0
+replace polit_check=1 if polit==1
+
+**generate the log values 
+gen prcodavg_log=log(prcodavg) 
+gen weekly_death_log=log(weekly_death) 
+gen weekly_cases_log=log(weekly_cases)
+gen US_weekly_death_log=log(US_weekly_death)
+gen cash_log=log(chq)
+gen revenue_log=log(revtq)
+gen debt_to_assets_log=log(debt_to_assets)
+gen assets_log=log(atq)
+gen sales_log=log(saleq)
+
+**declare data to be panel data 
+**bit unbalanced because of some little gaps in available company data 
+xtset gvkeyid time_variable
+
+
+ssc install estout 
 **start with basic regressions 
 **Covid on stock prices with index and logs 
 reg prcodavg weekly_death, robust  
@@ -204,40 +458,33 @@ eststo basic
 **add industry 
 reg prcodavg weekly_death sic, robust
 eststo basic_2
-**add sales but from last quarter
-**cretae sales last quarter variable 
-duplicates list gvkeyid time_variable
-sort gvkeyid time_variable
-by gvkeyid: gen sales_t_before=saleq[_n-12] 
-gen sales_before_log=log(sales_t_before)
 **add sales
-reg prcodavg weekly_death sic sales_t_before, robust
+reg prcodavg weekly_death sic saleq, robust
 eststo basic_3
 **test whether it makes sense to take log values 
-reg prcodavg weekly_death sic_dummy sales_t_before, robust 
+reg prcodavg weekly_death sic saleq, robust 
 predict resid, resid
 hist resid, percent
 tabstat resid, stats(median mean)
 **median is less than the mean, hence the residual is skewed to the right 
 **this speakes in favor of using log values- which is done in the latter part 
 **first add companie size expressed as total assets 
-reg prcodavg weekly_death sic sales_t_before atq, robust 
+reg prcodavg weekly_death sic saleq atq, robust 
 eststo basic_4
 **add cash
-reg prcodavg weekly_death sic sales_t_before atq chq, robust
+reg prcodavg weekly_death sic saleq atq chq, robust
 eststo basic_5 
 **add leverage
-reg prcodavg weekly_death sic sales_t_before atq chq debt_to_assets, robust 
+reg prcodavg weekly_death sic saleq atq chq debt_to_assets, robust 
 eststo basic_6 
 estat vif
 esttab 
-esstab using further_regression_basic.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
+esttab using further_regression_basic.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
 est clear 
  
- 
- **now with log values- but weekly death not as log 
- **put without penny stocks, as thoose have negative logs 
- **create dummy to identify penny stocks 
+**now with log values- but weekly death not as log 
+**put without penny stocks, as thoose have negative logs 
+**create dummy to identify penny stocks 
 gen log_dummy=0
 replace log_dummy=1 if prcodavg<=1
 
@@ -252,20 +499,20 @@ reg prcodavg_log weekly_death if log_dummy==0, robust
 eststo basic_log
 reg prcodavg_log weekly_death sic if log_dummy==0, robust
 eststo basic_log_2
-reg prcodavg_log weekly_death sic sales_before_log  if log_dummy==0 & sales_dummy==0, robust 
+reg prcodavg_log weekly_death sic sales_log  if log_dummy==0 & sales_dummy==0, robust 
 eststo basic_log_3
-reg prcodavg_log weekly_death sic sales_before_log assets_log if log_dummy==0 & sales_dummy==0 & assets_dummy==0, robust
+reg prcodavg_log weekly_death sic sales_log assets_log if log_dummy==0 & sales_dummy==0 & assets_dummy==0, robust
 eststo basic_log_4
 **add cash 
-reg prcodavg_log weekly_death sic sales_before_log assets_log  cash_log if log_dummy==0 & sales_dummy==0 &assets_dummy==0, robust
+reg prcodavg_log weekly_death sic sales_log assets_log  cash_log if log_dummy==0 & sales_dummy==0 &assets_dummy==0, robust
 eststo basic_log_5
 **add leverage!
-reg prcodavg_log weekly_death sic sales_before_log assets_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0 &assets_dummy==0, robust
+reg prcodavg_log weekly_death sic sales_log assets_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0 &assets_dummy==0, robust
 eststo basic_log_6
 estat vif
 **Vif high for assets hence drop assets for further analysis 
 **without assets
-reg prcodavg_log weekly_death sic sales_before_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, robust
+reg prcodavg_log weekly_death sic sales_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, robust
 eststo basic_log_7
 estat vif
 esttab
@@ -273,16 +520,16 @@ esttab using further_regression_basic_log.tex, replace star(+ 0.10 * 0.05 ** 0.0
 est clear 
 
 **include company fixed effects to the last setup
-xtreg prcodavg_log weekly_death sic sales_before_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, fe vce(robust)
+xtreg prcodavg_log weekly_death sic sales_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, fe vce(robust)
 eststo company_fixed_effect 
 **time fixed effects(with weeks)
-reghdfe prcodavg_log weekly_death sales_before_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, absorb(time_variable) vce(robust)
+reghdfe prcodavg_log weekly_death sales_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, absorb(time_variable) vce(robust)
 eststo time_fixed_effects
 **check time fixed effects year 
-reghdfe prcodavg_log weekly_death sales_before_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, absorb(fyearq) vce(robust)
+reghdfe prcodavg_log weekly_death sales_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, absorb(fyearq) vce(robust)
 eststo time_fixed_year
 **use both company and time (week) fixed effects 
-reghdfe prcodavg_log weekly_death sales_before_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, absorb(time_variable gvkeyid) vce(robust)
+reghdfe prcodavg_log weekly_death sales_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, absorb(time_variable gvkeyid) vce(robust)
 eststo both_fixed_effects
 esttab 
 esttab using fixed_effects.tex,replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
@@ -290,10 +537,10 @@ est clear
 
 **following part evaluates the identification channel 
 **so far baseline regression 
-reg prcodavg_log weekly_death sales_before_log sic cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, robust
+reg prcodavg_log weekly_death sales_log sic cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, robust
 eststo base
 **regression with potential instrumenmts 
-reg prcodavg_log weekly_death sales_before_log sic cash_log debt_to_assets age popu polit weekly_cases if log_dummy==0 & sales_dummy==0, robust
+reg prcodavg_log weekly_death sales_log sic cash_log debt_to_assets age popu polit weekly_cases if log_dummy==0 & sales_dummy==0, robust
 eststo base_with_all_instruments
 estat 
 estat start_IV.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
@@ -305,18 +552,18 @@ reg weekly_death age popu polit_check weekly_cases if log_dummy==0 & sales_dummy
 eststo IV_covid_test
 predict resid_death_final, resid
 estat vif
-reg prcodavg_log weekly_death sales_before_log sic cash_log debt_to_assets resid_death_final if log_dummy==0 & sales_dummy==0, robust 
+reg prcodavg_log weekly_death sales_log sic cash_log debt_to_assets resid_death_final if log_dummy==0 & sales_dummy==0, robust 
 test resid_death_final
 **Durbin-Wu Husman test speaks in favor ofg not suited as an instrument 
 **how the IV would look 
-ivregress 2sls prcodavg_log sales_before_log sic cash_log debt_to_assets (weekly_death=weekly_cases age popu polit_check) if log_dummy==0 & sales_dummy==0, vce(robust) 
+ivregress 2sls prcodavg_log sales_log sic cash_log debt_to_assets (weekly_death=weekly_cases age popu polit_check) if log_dummy==0 & sales_dummy==0, vce(robust) 
 
 **test IV without weekly_cases
 **test only politics and age and popu
 reg weekly_death age polit_check popu if log_dummy==0 & sales_dummy==0, robust 
 eststo IV_covid_test_2
 predict resid_test_2, resid
-reg prcodavg_log weekly_death sales_before_log sic cash_log debt_to_assets resid_test_2 if log_dummy==0 & sales_dummy==0, robust 
+reg prcodavg_log weekly_death sales_log sic cash_log debt_to_assets resid_test_2 if log_dummy==0 & sales_dummy==0, robust 
 test resid_test_2
 **test speaks in favor of using it as an instrument 
 esttab 
@@ -328,9 +575,9 @@ est clear
 ssc install ivreg2
 ssc install ranktest
 **for comparison 
-reg prcodavg_log weekly_death sales_before_log sic cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, robust
+reg prcodavg_log weekly_death sales_log sic cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, robust
 eststo IV_weekly_second
-ivreg2 prcodavg_log sales_before_log sic cash_log debt_to_assets (weekly_death= popu age polit_check) if log_dummy==0 & sales_dummy==0, robust ffirst
+ivreg2 prcodavg_log sales_log sic cash_log debt_to_assets (weekly_death= popu age polit_check) if log_dummy==0 & sales_dummy==0, robust ffirst
 eststo IV_weekly_second_2
 **the test look fine
 esttab
@@ -348,23 +595,23 @@ eststo IV_stay_home_2
 reg stay_home_order weekly_cases polit_check if log_dummy==0 & sales_dummy==0, robust
 **influence 
 predict resid_test_stay_home, resid 
-reg prcodavg_log stay_home_order sales_before_log cash_log sic debt_to_assets resid_test_stay_home if log_dummy==0 & sales_dummy==0, robust
+reg prcodavg_log stay_home_order sales_log cash_log sic debt_to_assets resid_test_stay_home if log_dummy==0 & sales_dummy==0, robust
 eststo IV_stay_home_3
 **significant!!
 test resid_test_stay_home
 
 **used as IV
 **for comparison 
-reg prcodavg_log stay_home_order sales_before_log cash_log sic debt_to_assets if log_dummy==0 & sales_dummy==0, robust 
+reg prcodavg_log stay_home_order sales_log cash_log sic debt_to_assets if log_dummy==0 & sales_dummy==0, robust 
 eststo IV_stay_home_4
-ivreg2 prcodavg_log sales_before_log cash_log sic debt_to_assets (stay_home_order= polit_check weekly_cases) if log_dummy==0 & sales_dummy==0, robust 
+ivreg2 prcodavg_log sales_log cash_log sic debt_to_assets (stay_home_order= polit_check weekly_cases) if log_dummy==0 & sales_dummy==0, robust 
 eststo IV_stay_home_5
 
 **case with age 
 reg stay_home_order age weekly_cases polit_check if log_dummy==0 & sales_dummy==0, robust
 predict resid_test_stay_home_2, resid
 
-reg prcodavg_log stay_home_order sales_before_log cash_log sic debt_to_assets resid_test_stay_home_2 if log_dummy==0 & sales_dummy==0, robust 
+reg prcodavg_log stay_home_order sales_log cash_log sic debt_to_assets resid_test_stay_home_2 if log_dummy==0 & sales_dummy==0, robust 
 eststo IV_stay_home_6
 **not significant; not suited as IV
 test resid_test_stay_home 
@@ -388,16 +635,16 @@ reg prcodavg_log weekly_death sic if log_dummy==0, robust
 reg prcodavg_log death_fraction sic if log_dummy==0, robust 
 eststo death_fraction_1
 
-reg prcodavg_log weekly_death sic sales_before_log if log_dummy==0 & sales_dummy==0, robust 
-reg prcodavg_log death_fraction sic sales_before_log  if log_dummy==0 & sales_dummy==0 , robust 
+reg prcodavg_log weekly_death sic sales_log if log_dummy==0 & sales_dummy==0, robust 
+reg prcodavg_log death_fraction sic sales_log  if log_dummy==0 & sales_dummy==0 , robust 
 eststo death_fraction_2
 
 reg prcodavg_log weekly_death sic sales_before_log cash_log if log_dummy==0 & sales_dummy==0 , robust 
-reg prcodavg_log death_fraction sic sales_before_log cash_log if log_dummy==0 & sales_dummy==0, robust
+reg prcodavg_log death_fraction sic sales_log cash_log if log_dummy==0 & sales_dummy==0, robust
 eststo death_fraction_3 
 
-reg prcodavg_log weekly_death sic sales_before_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0 , robust 
-reg prcodavg_log death_fraction sic sales_before_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, robust 
+reg prcodavg_log weekly_death sic sales_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0 , robust 
+reg prcodavg_log death_fraction sic sales_log cash_log debt_to_assets if log_dummy==0 & sales_dummy==0, robust 
 eststo death_fraction_4
 
 esttab 
@@ -417,15 +664,15 @@ reg prcodavg_log weekly_death, robust
 reg prcodavg_log weekly_death sic  if atq<16428.9, robust
 eststo rub_1
 reg prcodavg_log weekly_death sic, robust
-reg prcodavg_log weekly_death sic sales_before_log if atq<16428.9, robust
+reg prcodavg_log weekly_death sic sales_log if atq<16428.9, robust
 eststo rub_2
-reg prcodavg_log weekly_death sic sales_before_log, robust
-reg prcodavg_log weekly_death sic sales_before_log cash_log if atq<16428.9, robust
+reg prcodavg_log weekly_death sic sales_log, robust
+reg prcodavg_log weekly_death sic sales_log cash_log if atq<16428.9, robust
 eststo rub_3
-reg prcodavg_log weekly_death sic sales_before_log cash_log,robust
-reg prcodavg_log weekly_death sic sales_before_log cash_log debt_to_assets if atq<16428.9, robust
+reg prcodavg_log weekly_death sic sales_log cash_log,robust
+reg prcodavg_log weekly_death sic sales_log cash_log debt_to_assets if atq<16428.9, robust
 eststo rub_4
-reg prcodavg_log weekly_death sic sales_before_log cash_log debt_to_assets, robust 
+reg prcodavg_log weekly_death sic sales_log cash_log debt_to_assets, robust 
 esttab 
 esttab using rub_1.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
 est clear 
@@ -437,18 +684,22 @@ reg prcodavg_log weekly_death, robust
 reg prcodavg_log weekly_death sic  if mkvaltq<19100.34, robust
 eststo rub_2_2
 reg prcodavg_log weekly_death sic, robust
-reg prcodavg_log weekly_death sic sales_before_log if mkvaltq<19100.34, robust
+reg prcodavg_log weekly_death sic sales_log if mkvaltq<19100.34, robust
 eststo rub_2_3
-reg prcodavg_log weekly_death sic sales_before_log, robust
-reg prcodavg_log weekly_death sic sales_before_log cash_log if mkvaltq<19100.34, robust
+reg prcodavg_log weekly_death sic sales_log, robust
+reg prcodavg_log weekly_death sic sales_log cash_log if mkvaltq<19100.34, robust
 eststo rub_2_4
-reg prcodavg_log weekly_death sic sales_before_log cash_log,robust
-reg prcodavg_log weekly_death sic sales_before_log cash_log debt_to_assets if mkvaltq<19100.34, robust
+reg prcodavg_log weekly_death sic sales_log cash_log,robust
+reg prcodavg_log weekly_death sic sales_log cash_log debt_to_assets if mkvaltq<19100.34, robust
 eststo rub_2_5
-reg prcodavg_log weekly_death sic sales_before_log cash_log debt_to_assets, robust 
+reg prcodavg_log weekly_death sic sales_log cash_log debt_to_assets, robust 
 esttab 
 esttab using rub_2.tex, replace star(+ 0.10 * 0.05 ** 0.01 *** 0.001)
 est clear 
+
+
+
+
 
 *//IV
 clear all
