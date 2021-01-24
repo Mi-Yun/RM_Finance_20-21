@@ -54,11 +54,6 @@ cd "\\vmware-host\Shared Folders\RM_Finance\Stata\Regression_handin"
 *//Package Installation
 
 adopath
-*sysdir set PERSONAL "D:\Statapwis Fuck-You\Stata\ado\personal/"
-sysdir set PERSONAL  "C:\Users\郭米勻\Desktop\Statapwis Fuck-You\Stata\ado\personal/"
-*sysdir set PLUS "D:\Statapwis Fuck-You\Stata\ado\plus/"
-sysdir set PLUS  "C:\Users\郭米勻\Desktop\Statapwis Fuck-You\Stata\ado\plus/"
-adopath
 ssc install reghdfe, replace
 ssc install ftools, replace
 ssc install estout, replace
