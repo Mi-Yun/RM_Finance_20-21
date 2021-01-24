@@ -1,5 +1,5 @@
-*This is a Stata Do file
-****
+*THIS IS A STATA DO FILE*
+*****Start of Codes****
 ***Mi Yun-Kuo and Sophie Friebe 
 **Research Moduel finance 2020/2021
 ***Impacts of Covid 19 
@@ -665,6 +665,7 @@ estadd scalar F_stage_1 = e(first)[4,1]
 
 
 *IV :HH>65
+**with share of HH with an member of 65 or older
 gen HH_over_65_fraction=TotalHouseholdswithoneormorepeop/popu
 eststo: ivreg2 prcodavg_log (stay_home_order =HH_over_65_fraction) if log_dummy==0, first savefirst savefprefix(fs_1)
 *check the saved first stage results
@@ -729,9 +730,9 @@ ivreg2 prcodavg_log sic sales_log cash_log debt_to_assets (stay_home_order=unisu
 eststo Uninsured
 reg stay_home_order unisured_percent_2019, r
 
-
-**with share of HH with an member of 65 or older
-gen HH_over_65_fraction=TotalHouseholdswithoneormorepeop/popu
+ 
+**with share of HH with an member of 65 or older (defined in previous lines)
+*gen HH_over_65_fraction=TotalHouseholdswithoneormorepeop/popu
 ivreg2 prcodavg_log  sic sales_log cash_log debt_to_assets (stay_home_order=HH_over_65_fraction) if log_dummy==0 &sales_dummy==0, first 
 eststo HH_over_65 
 **weak instrument 
