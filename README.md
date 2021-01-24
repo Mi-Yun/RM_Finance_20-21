@@ -4,3 +4,6 @@
 #File Mergeing Process is the merging process of all our raw data.
 #Regressions is the file of the regression we run for our analysis
 #For text, go to overleaf
+#Following link show the data files
+https://drive.google.com/drive/folders/1bf1x0VmpW7z1JSy52yWdkcRp3Id9XQLI?usp=sharing
+
