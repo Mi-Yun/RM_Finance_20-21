@@ -344,7 +344,7 @@ graph export Stock.png, replace
 twoway hist prcodavg_log, percent
 graph export log_stock.png, replace
 twoway hist prcodavg_log if log_dummy==0, percent 
-graph export log_stock_penny.png
+graph export log_stock_penny.png, replace
 
 twoway hist atq, percent 
 graph export Asset.png, replace
