@@ -1,4 +1,5 @@
-*This is a Stata Do File
+*This is a Stata Do file
+****
 ***Mi Yun-Kuo and Sophie Friebe 
 **Research Moduel finance 2020/2021
 ***Impacts of Covid 19 
@@ -51,6 +52,13 @@ cd "\\vmware-host\Shared Folders\RM_Finance\Stata\Regression_handin"
 
 ***
 *//Package Installation
+
+adopath
+*sysdir set PERSONAL "D:\Statapwis Fuck-You\Stata\ado\personal/"
+sysdir set PERSONAL  "C:\Users\郭米勻\Desktop\Statapwis Fuck-You\Stata\ado\personal/"
+*sysdir set PLUS "D:\Statapwis Fuck-You\Stata\ado\plus/"
+sysdir set PLUS  "C:\Users\郭米勻\Desktop\Statapwis Fuck-You\Stata\ado\plus/"
+adopath
 ssc install reghdfe, replace
 ssc install ftools, replace
 ssc install estout, replace
@@ -622,13 +630,13 @@ reg prcodavg stay_home_order, r
 ******
 *//IV_Baseline  ****used in paper
 *//IV_stay_home_order_logPrice
-eststo: reg prcodavg_log stay_home_order, r
+eststo: reg prcodavg_log stay_home_order if log_dummy==0, r
 estadd scalar IV_stage_1 =.
 estadd scalar IV_st1_p_value = .
 estadd scalar F_stage_1 = . 
 
 *IV senate percentage
-eststo: ivreg2 prcodavg_log (stay_home_order = polit_check), first savefirst savefprefix(fs_1)
+eststo: ivreg2 prcodavg_log (stay_home_order = polit_check) if log_dummy==0, first savefirst savefprefix(fs_1)
 *check the saved first stage results
 esttab fs_1*
 return list
@@ -642,7 +650,7 @@ mat list e(first)
 estadd scalar F_stage_1 = e(first)[4,1]
 
 *IV latest election
-eststo: ivreg2 prcodavg_log (stay_home_order = polit_last), first savefirst savefprefix(fs_1)
+eststo: ivreg2 prcodavg_log (stay_home_order = polit_last) if log_dummy==0, first savefirst savefprefix(fs_1)
 *check the saved first stage results
 esttab fs_1*
 return list
@@ -658,7 +666,7 @@ estadd scalar F_stage_1 = e(first)[4,1]
 
 *IV :HH>65
 gen HH_over_65_fraction=TotalHouseholdswithoneormorepeop/popu
-eststo: ivreg2 prcodavg_log (stay_home_order =HH_over_65_fraction), first savefirst savefprefix(fs_1)
+eststo: ivreg2 prcodavg_log (stay_home_order =HH_over_65_fraction) if log_dummy==0, first savefirst savefprefix(fs_1)
 *check the saved first stage results
 esttab fs_1*
 return list
@@ -672,7 +680,7 @@ mat list e(first)
 estadd scalar F_stage_1 = e(first)[4,1]
 
 *IV uninsured percentage
-eststo: ivreg2 prcodavg_log (stay_home_order = unisured_percent_2019), first savefirst savefprefix(fs_1)
+eststo: ivreg2 prcodavg_log (stay_home_order = unisured_percent_2019) if log_dummy==0, first savefirst savefprefix(fs_1)
 *check the saved first stage results
 esttab fs_1*
 return list
@@ -764,13 +772,13 @@ test res3_4
 ******	 
 *//IV_Baseline *//IV_log_levels	
 *//IV_weekly_death_logPrice
-eststo: reg prcodavg_log weekly_death, robust
+eststo: reg prcodavg_log weekly_death if log_dummy==0, robust
 estadd scalar IV_stage_1 =.
 estadd scalar IV_st1_p_value = .
 estadd scalar F_stage_1 = . 
 
 *fraction of HH with members >65
-eststo: ivreg2 prcodavg_log (weekly_death = HH_over_65_fraction), first savefirst savefprefix(fs_1)
+eststo: ivreg2 prcodavg_log (weekly_death = HH_over_65_fraction) if log_dummy==0, first savefirst savefprefix(fs_1)
 *check the saved first stage results
 esttab fs_1*
 return list
@@ -784,7 +792,7 @@ mat list e(first)
 estadd scalar F_stage_1 = e(first)[4,1]
 
 
-eststo: ivreg2 prcodavg_log (weekly_death = unisured_percent_2019),first savefirst savefprefix(fs_1)
+eststo: ivreg2 prcodavg_log (weekly_death = unisured_percent_2019) if log_dummy==0 ,first savefirst savefprefix(fs_1)
 *check the saved first stage results
 esttab fs_1*
 return list
@@ -798,7 +806,7 @@ mat list e(first)
 estadd scalar F_stage_1 = e(first)[4,1]
 
 
-eststo: ivreg2 prcodavg_log (weekly_death = age ), first savefirst savefprefix(fs_1)
+eststo: ivreg2 prcodavg_log (weekly_death = age ) if log_dummy==0, first savefirst savefprefix(fs_1)
 *check the saved first stage results
 esttab fs_1*
 return list
