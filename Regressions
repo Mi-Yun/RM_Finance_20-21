@@ -358,15 +358,16 @@ twoway hist sales_log, percent
 graph export sales_log.png, replace
 
 
-**More descriptive statistics 
-*eststo: quietly eststo tabstat prcodavg prcodavg_log weekly_death sales_log cash_log debt_to_assets assets_log ,stats (mean p50 p1 p5 p10 p25 p75 p90 p95 p99 iqr sk k sd min max n) 
-*esttab
+**More descriptive statistics (Tables)
 
-*estpost summarize prcodavg prcodavg_log weekly_death saleq sales_log, listwise 
-*esttab, nomtitle nonumber 
-
-*eststo: estpost tabstat prcodavg prcodavg_log weekly_death saleq sales_log chq cash_log debt_to_assets atq assets_log, listwise stats(mean sd p25 median p75 sk k min max) column(statistics) 
-*esttab using des_stat.pdf, cells("mean sd p25 median p75 skewness kurtosis min max") plain 
+eststo sumstat: quietly estpost sum prcodavg_log weekly_death sales_log assets_log debt_to_assets, detail 
+esttab sumstat, cells ("mean p50 p25 p75 min max sd skewness kurtosis") nonumbers label 
+esttab sumstat using desstat.png,  cells ("mean p50 p25 p75 min max sd skewness kurtosis") nonumbers label 
+ 
+eststo sumstat1: quietly estpost sum prcodavg saleq atq, detail 
+esttab sumstat1, cells ("mean p50 p25 p75 min max sd skewness kurtosis") nonumbers label 
+esttab sumstat1 using desstat_1.tex,  cells ("mean p50 p25 p75 min max sd skewness kurtosis") nonumbers label  
+ 
 
 *//Baseline
 	*//OLS and log level OLS
