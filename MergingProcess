@@ -403,20 +403,8 @@ save Stock_Addon\Stock_Addon_weekavg_2020Q3.dta, replace
 *cd "F:\Stock"
 cd "Z:\SP PHD U3\Stock"
 use Stock_weekly_avg.dta, clear
-append using Stock_Addon\Stock_Addon_weekavg_2018q1.dta
-*Only keep data with company names and were matched
-drop if ID =="" | _merge != 3
-save Stock_weekly_avg.dta, replace
-*repear appending steps (Loop requires more memories)
-append using Stock_Addon\Stock_Addon_weekavg_2018q2.dta
-drop if ID =="" | _merge != 3
-save Stock_weekly_avg.dta, replace
-append using Stock_Addon\Stock_Addon_weekavg_2018q3.dta
-drop if ID =="" | _merge != 3
-save Stock_weekly_avg.dta, replace
-append using Stock_Addon\Stock_Addon_weekavg_2018q4.dta
-drop if ID =="" | _merge != 3
-save Stock_weekly_avg.dta, replace
+*Only keep data with company names and were matched, this is for double checking whether there are leftout company feaures
+
 append using Stock_Addon\Stock_Addon_weekavg_2019Q1.dta
 drop if ID =="" | _merge != 3
 save Stock_weekly_avg.dta, replace
