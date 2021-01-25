@@ -1,0 +1,34 @@
+clear all 
+
+import excel "Covid_onlyUS_final.xlsx" 
+
+rename C US_weekly_death
+gen key=_n
+drop if key>=8 & key<=13
+gen int every7=mod(_n,7)==0
+keep if every7==1
+
+gen state="US"
+drop every7
+drop key
+gen key=_n
+drop if key==1
+gen week=_n+7
+set obs 50
+encode US_weekly_death, generate(US_new) 
+replace US_new=0 if key==. 
+drop US_weekly_death 
+rename US_new US_weekly_death 
+
+replace state="US" if key==.
+drop key
+gen id=_n
+replace week=1 if id==44
+replace week=2 if id==45 
+replace week=3 if id==46 
+replace week=4 if id==47 
+replace week=5 if id==48 
+replace week=6 if id==49 
+replace week=7 if id==50 
+
+drop id 
