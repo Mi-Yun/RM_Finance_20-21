@@ -296,7 +296,7 @@ save Stock_Addon\Stock_Addon_weekavg_2020Q1.dta, replace
 ***Repeat for all files*** 
 ***CANNOT use loop, because doube level loop cannot identify two corresponding file!!!***
 
-**2018**
+**2020**
 use Stock_weekly_avg.dta, clear
 append using Stock\Stock_2020Q2.dta
 drop if ID ==""
