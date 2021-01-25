@@ -1,0 +1,78 @@
+clear all 
+
+import excel "Inhabitants_Census_Bureau.xlsx"
+gen id=_n
+drop if id==1 |id==2 |id==3
+drop F
+drop G 
+drop H 
+drop C 
+drop D
+drop E
+drop I 
+drop J 
+drop K 
+drop L 
+rename A st
+drop B 
+
+rename M popu
+drop if id==4
+generate str9 state="0" 
+replace state="US" if id==5
+replace state="AL" if id==10
+replace state="AK" if id==11
+replace state="AZ" if id==12
+replace state="AR" if id==13
+replace state="CA" if id==14
+replace state="CO" if id==15
+replace state="CT" if id==16
+replace state="DE" if id==17
+replace state="DC" if id==18 
+replace state="FL" if id==19
+replace state="GA" if id==20
+replace state="ID" if id==22
+replace state="IL" if id==23
+replace state="IN" if id==24
+replace state="IA" if id==25
+replace state="KS" if id==26
+replace state="KY" if id==27
+
+replace state="LA" if id==28
+replace state="ME" if id==29
+replace state="MD" if id==30
+replace state="MA" if id==31
+replace state="MI" if id==32
+replace state="MN" if id==33
+replace state="MS" if id==34
+replace state="MO" if id==35
+
+replace state="MT" if id==36
+replace state="NE" if id==37
+replace state="NV" if id==38
+replace state="NH" if id==39
+replace state="NJ" if id==40
+replace state="NM" if id==41
+replace state="NY" if id==42
+replace state="NC" if id==43
+
+replace state="OH" if id==45
+replace state="OK" if id==46
+replace state="OR" if id==47
+replace state="PA" if id==48
+replace state="RI" if id==49
+replace state="SC" if id==50
+replace state="TN" if id==52
+replace state="TX" if id==53
+replace state="UT" if id==54
+
+replace state="VT" if id==55
+replace state="VA" if id==56
+replace state="WA" if id==57
+replace state="WV" if id==58
+replace state="WI" if id==59
+
+drop st
+drop if id==6 |id==7 |id==8 |id==9 |id==21
+drop id 
+drop if state=="0"
